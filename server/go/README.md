@@ -5,7 +5,7 @@ Gin middleware for signature-based crypto payments.
 ## Installation
 
 ```bash
-go get github.com/mvpoyatt/sign-pay
+go get github.com/mvpoyatt/sign-pay/server/go
 ```
 
 ## Usage
@@ -14,7 +14,7 @@ go get github.com/mvpoyatt/sign-pay
 package main
 
 import (
-  signpay "github.com/mvpoyatt/sign-pay"
+  signpay "github.com/mvpoyatt/sign-pay/server/go"
   "github.com/gin-gonic/gin"
 )
 
@@ -137,7 +137,7 @@ Error responses include a JSON body with details:
 
 ## Example
 
-See the [Gin example](../../../examples/go-gin/) for a complete working server.
+See the [Gin example](../../examples/go-gin/) for a complete working server.
 
 ## License
 

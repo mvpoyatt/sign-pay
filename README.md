@@ -43,7 +43,7 @@ When clicked, the component:
 ### 2. Backend Flow
 
 ```go
-import signpay "github.com/mvpoyatt/sign-pay"
+import signpay "github.com/mvpoyatt/sign-pay/server/go"
 
 r.POST("/api/purchase",
   signpay.SignPayMiddleware(
@@ -112,7 +112,7 @@ npm install @sign-pay/react
 ### Go Middleware
 
 ```bash
-go get github.com/mvpoyatt/sign-pay
+go get github.com/mvpoyatt/sign-pay/server/go
 ```
 
 ## Quick Start
@@ -122,8 +122,8 @@ See the [examples](./examples/) directory for complete working implementations:
 - [Gin Backend Example](./examples/go-gin/)
 
 For detailed package documentation:
-- [React Component README](./packages/client/react/README.md)
-- [Go Middleware README](./packages/server/go/README.md)
+- [React Component README](./client/react/README.md)
+- [Go Middleware README](./server/go/README.md)
 
 ## Development
 
@@ -131,7 +131,7 @@ This is a monorepo with local package linking for development:
 
 ```bash
 # Install dependencies
-cd packages/client/react && npm install && npm run build
+cd client/react && npm install && npm run build
 cd examples/react-nextjs && npm install
 
 # Run example app

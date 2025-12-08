@@ -1,7 +1,7 @@
 {
-  "name": "sign-pay-react",
+  "name": "@sign-pay/react",
   "version": "0.1.0",
-  "description": "React component for signature-based crypto payments with ERC-3009",
+  "description": "React component for signature-based crypto payments",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

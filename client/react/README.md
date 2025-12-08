@@ -108,7 +108,7 @@ Content-Type: application/json
 Use the Go middleware to automatically verify and settle the payment:
 
 ```go
-import signpay "github.com/mvpoyatt/sign-pay"
+import signpay "github.com/mvpoyatt/sign-pay/server/go"
 
 r.POST("/api/purchase",
   signpay.SignPayMiddleware(chainId, tokenAddress, amount, recipient, facilitatorURL),
@@ -118,7 +118,7 @@ r.POST("/api/purchase",
 )
 ```
 
-See the [Go middleware README](../../server/go/README.md) for details.
+See the [Go middleware README](https://github.com/mvpoyatt/sign-pay/tree/main/server/go) for details.
 
 ## Supported Tokens
 

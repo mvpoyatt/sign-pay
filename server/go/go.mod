@@ -1,4 +1,4 @@
-module github.com/mvpoyatt/sign-pay
+module github.com/mvpoyatt/sign-pay/server/go
 
 go 1.24.5
 

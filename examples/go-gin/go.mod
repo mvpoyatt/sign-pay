@@ -4,11 +4,11 @@ go 1.24.5
 
 require (
 	github.com/gin-gonic/gin v1.11.0
-	github.com/mvpoyatt/sign-pay v0.0.0
+	github.com/mvpoyatt/sign-pay/server/go v0.0.0
 )
 
 // Use local package during development
-replace github.com/mvpoyatt/sign-pay => ../../packages/server/go
+replace github.com/mvpoyatt/sign-pay/server/go => ../../server/go
 
 require (
 	github.com/bytedance/gopkg v0.1.3 // indirect

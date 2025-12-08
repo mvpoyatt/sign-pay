@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
-    "@sign-pay/react": "file:../../packages/client/react",
+    "@sign-pay/react": "file:../../client/react",
     "@tanstack/react-query": "^5.90.9",
     "next": "16.0.3",
     "react": "19.2.0",

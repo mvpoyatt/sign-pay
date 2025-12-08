@@ -1,7 +1,7 @@
 package main
 
 import (
-	signpay "github.com/mvpoyatt/sign-pay"
+	signpay "github.com/mvpoyatt/sign-pay/server/go"
 
 	"github.com/gin-gonic/gin"
 )
