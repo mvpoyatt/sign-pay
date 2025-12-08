@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { WagmiProvider } from 'wagmi'
 import { WagmiConfig, SupportedChainId } from './wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -22,6 +22,8 @@ export type SignPayProps = {
 
   buttonHeight?: number
   buttonWidth?: number
+  displayMode?: 'light' | 'dark' | 'system'
+  accentColor?: string
 };
 
 export function SignPay({
@@ -35,8 +37,35 @@ export function SignPay({
   onPaymentCreated,
   buttonHeight,
   buttonWidth,
+  displayMode = 'dark',
+  accentColor = '#9333ea',
 }: SignPayProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDark, setIsDark] = useState(true);
+
+  // Handle system theme detection
+  useEffect(() => {
+    if (displayMode === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      setIsDark(mediaQuery.matches);
+
+      const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
+      mediaQuery.addEventListener('change', handler);
+      return () => mediaQuery.removeEventListener('change', handler);
+    } else {
+      setIsDark(displayMode === 'dark');
+    }
+  }, [displayMode]);
+
+  // Generate hover color (darken accent by ~15%)
+  const darkenColor = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `#${Math.floor(r * 0.85).toString(16).padStart(2, '0')}${Math.floor(g * 0.85).toString(16).padStart(2, '0')}${Math.floor(b * 0.85).toString(16).padStart(2, '0')}`;
+  };
+
+  const hoverColor = darkenColor(accentColor);
 
   return (
     <WagmiProvider config={WagmiConfig}>
@@ -44,19 +73,19 @@ export function SignPay({
 
         <button
           style={{
-            borderRadius: '9999px',
-            backgroundColor: '#9333ea',
+            borderRadius: '0.75rem',
+            backgroundColor: accentColor,
             padding: '0.5rem 1rem',
             color: 'white',
             marginBottom: '1rem',
             cursor: 'pointer',
             border: 'none',
-            fontSize: '1rem',
+            fontSize: '1.05rem',
             height: buttonHeight || 40,
             width: buttonWidth || 160,
           }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7e22ce'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#9333ea'}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverColor}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = accentColor}
           onClick={() => {setIsOpen(true)}}>
           Pay with Crypto
         </button>
@@ -72,16 +101,19 @@ export function SignPay({
                   width: '100%',
                   maxWidth: '28rem',
                   borderRadius: '0.75rem',
-                  backgroundColor: 'black',
-                  padding: '1.5rem',
+                  backgroundColor: isDark ? '#000000' : '#ffffff',
+                  paddingTop: '1.65rem',
+                  paddingBottom: '1.65rem',
+                  paddingLeft: '2rem',
+                  paddingRight: '2rem',
                   backdropFilter: 'blur(40px)',
                 }}>
 
-                <DialogTitle style={{ fontSize: '1.125rem', fontWeight: 500, color: 'white', marginBottom: '1rem' }}>
+                <DialogTitle style={{ fontSize: '1.2rem', fontWeight: 500, color: isDark ? '#ffffff' : '#000000', marginBottom: '1rem' }}>
                   <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <h3>Pay With Crypto</h3>
                     <FiX
-                      style={{ cursor: 'pointer', color: 'white' }}
+                      style={{ cursor: 'pointer', color: isDark ? '#ffffff' : '#000000' }}
                       size={20}
                       onClick={() => setIsOpen(false)}
                     />
@@ -97,6 +129,8 @@ export function SignPay({
                   orderHeaders={orderHeaders}
                   orderData={orderData}
                   onPaymentCreated={onPaymentCreated}
+                  isDark={isDark}
+                  accentColor={accentColor}
                 />
 
               </DialogPanel>

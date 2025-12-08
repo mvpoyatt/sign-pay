@@ -19,6 +19,8 @@ export type ConnectAndPayProps = {
   orderData?: Record<string, any>
   // Custom callback (overrides paymentEndpoint if provided)
   onPaymentCreated?: (signatureData: string) => Promise<void>
+  isDark: boolean
+  accentColor: string
 };
 
 export function ConnectAndPay({
@@ -30,6 +32,8 @@ export function ConnectAndPay({
   orderHeaders,
   orderData,
   onPaymentCreated,
+  isDark,
+  accentColor,
 }: ConnectAndPayProps) {
   const [isHoveringButton, setIsHoveringButton] = useState(false);
   const { isConnected, chain, address } = useConnection()
@@ -153,11 +157,20 @@ export function ConnectAndPay({
     );
   }
 
+  const darkenColor = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `#${Math.floor(r * 0.85).toString(16).padStart(2, '0')}${Math.floor(g * 0.85).toString(16).padStart(2, '0')}${Math.floor(b * 0.85).toString(16).padStart(2, '0')}`;
+  };
+
   return (
     <>
       <WalletOptions
         chainId={chainId}
         tokenAddress={tokenAddress}
+        isDark={isDark}
+        accentColor={accentColor}
       />
 
       <button
@@ -169,7 +182,7 @@ export function ConnectAndPay({
           paddingRight: '1rem',
           paddingTop: '0.5rem',
           paddingBottom: '0.5rem',
-          backgroundColor: isHoveringButton ? '#1d4ed8' : '#2563eb',
+          backgroundColor: isHoveringButton ? darkenColor(accentColor) : accentColor,
           color: 'white',
           opacity: (!isConnected || (chain?.id !== chainId) || isCheckingToken) ? 0.5 : 1,
           cursor: isHoveringButton ? 'pointer' : 'default'

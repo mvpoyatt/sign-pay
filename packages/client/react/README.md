@@ -31,9 +31,11 @@ export default function CheckoutPage() {
       // Optional: custom headers (e.g., auth token)
       orderHeaders={{ 'Authorization': 'Bearer token' }}
 
-      // Optional: button styling
+      // Optional: UI customization
       buttonHeight={40}
       buttonWidth={160}
+      displayMode="system"
+      accentColor="#10b981"
     />
   );
 }
@@ -64,8 +66,25 @@ export default function CheckoutPage() {
 | `onPaymentCreated` | `function` | Yes* | Alternative to `paymentEndpoint` - callback receives signature data |
 | `buttonHeight` | `number` | No | Button height in pixels (default: 40) |
 | `buttonWidth` | `number` | No | Button width in pixels (default: 160) |
+| `displayMode` | `'light' \| 'dark' \| 'system'` | No | Theme mode (default: 'dark'). 'system' follows OS preference |
+| `accentColor` | `string` | No | Hex color for buttons and accents (default: '#9333ea') |
 
 *Either `paymentEndpoint` or `onPaymentCreated` is required.
+
+## Theming
+
+The component supports light, dark, and system-based themes with customizable accent colors:
+
+```tsx
+<SignPay
+  // ... other props
+  displayMode="system"    // Auto-detects OS theme
+  accentColor="#10b981"   // Custom green accent
+/>
+```
+
+- **displayMode**: Choose `'light'`, `'dark'`, or `'system'` (follows OS preference)
+- **accentColor**: Any hex color for buttons and borders. Text is always white for readability.
 
 ## Backend Integration
 

@@ -13,11 +13,15 @@ import { erc20Abi } from 'viem';
 export type WalletOptionsProps = {
   chainId: SupportedChainId
   tokenAddress: `0x${string}`
+  isDark: boolean
+  accentColor: string
 };
 
 export function WalletOptions({
   chainId,
   tokenAddress,
+  isDark,
+  accentColor,
 }: WalletOptionsProps) {
   const connectors = useConnectors()
   const connect = useConnect()
@@ -79,7 +83,13 @@ export function WalletOptions({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '1rem',
+      height: '12rem',
+      overflowY: 'auto'
+    }}>
       { connectors.map((connector) => {
         const isConnected = activeConnector?.uid === connector.uid
         return (
@@ -92,6 +102,8 @@ export function WalletOptions({
             balance={isConnected ? balance : undefined}
             isLoadingBalance={isConnected ? isLoadingBalance : false}
             onClick={() => handleConnectorClick(connector)}
+            isDark={isDark}
+            accentColor={accentColor}
           />
         )
       })}
@@ -107,6 +119,8 @@ function WalletOption({
   balance,
   isLoadingBalance,
   onClick,
+  isDark,
+  accentColor,
 }: {
   connector: Connector
   isConnected: boolean
@@ -115,6 +129,8 @@ function WalletOption({
   balance?: { value: bigint; decimals: number; symbol: string } | undefined
   isLoadingBalance: boolean
   onClick: () => void
+  isDark: boolean
+  accentColor: string
 }) {
   const [ready, setReady] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
@@ -126,16 +142,25 @@ function WalletOption({
     })()
   }, [connector])
 
+  const bgColor = isDark ? '#1f2937' : '#f3f4f6';
+  const bgColorHover = isDark ? '#111827' : '#e5e7eb';
+  const textColor = isDark ? '#ffffff' : '#000000';
+  const secondaryTextColor = isDark ? '#d1d5db' : '#6b7280';
+
+  // Create a more subtle accent border (20% opacity)
+  const accentBorder = `1px solid ${accentColor}33`;
+
   return (
     <button
       style={{
-        backgroundColor: isHovering ? '#111827' : '#1f2937',
+        backgroundColor: isHovering ? bgColorHover : bgColor,
         paddingLeft: '1rem',
         paddingRight: '1rem',
         paddingTop: '0.75rem',
         paddingBottom: '0.75rem',
-        color: 'white',
-        cursor: isHovering ? 'pointer' : 'default'
+        color: textColor,
+        cursor: isHovering ? 'pointer' : 'default',
+        border: accentBorder
       }}
       disabled={!ready}
       onMouseEnter={() => setIsHovering(true)}
@@ -151,7 +176,7 @@ function WalletOption({
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           <div>{connector.name}</div>
           {isConnected && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', fontSize: '0.875rem', color: '#d1d5db' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', fontSize: '0.875rem', color: secondaryTextColor }}>
               <div>Connected to {tokenName || 'token'} on {chain?.name}</div>
               {isLoadingBalance ? (
                 <div>Loading balance...</div>
