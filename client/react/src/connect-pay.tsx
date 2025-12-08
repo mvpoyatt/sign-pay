@@ -35,6 +35,8 @@ export function ConnectAndPay({
   isDark,
   accentColor,
 }: ConnectAndPayProps) {
+  const [response, setResponse] = useState<{success: boolean, message: string} | null>(null);
+  const [processingPayment, setProcessingPayment] = useState(false);
   const [isHoveringButton, setIsHoveringButton] = useState(false);
   const { isConnected, chain, address } = useConnection()
   const switchChain = useSwitchChain()
@@ -102,6 +104,13 @@ export function ConnectAndPay({
       return;
     }
 
+    if (response && !response.success) {
+      setResponse(null); // Clear previous error
+      return;
+    }
+
+    setProcessingPayment(true);
+
     try {
       const signatureData = await CreateSignature(
         walletClient,
@@ -129,7 +138,25 @@ export function ConnectAndPay({
         });
 
         if (!response.ok) {
-          throw new Error(`Payment endpoint returned ${response.status}`);
+          const errorText = await response.text();
+          console.warn('Payment endpoint error:', errorText || response.statusText);
+
+          // Try to parse JSON error message
+          let errorMessage = errorText || response.statusText;
+          try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.error) {
+              errorMessage = errorJson.error;
+            }
+          } catch {
+            // If not JSON, use the raw text
+          }
+
+          setResponse({ success: false, message: errorMessage });
+        } else {
+          const responseData = await response.json();
+          console.log('Payment processed successfully:', responseData);
+          setResponse({ success: true, message: 'Payment successful' });
         }
       } else {
         console.log('Payment signature created:', signatureData);
@@ -138,7 +165,9 @@ export function ConnectAndPay({
 
     } catch (error) {
       console.error('Payment failed:', error);
-      // TODO: Show error to user
+      setResponse({ success: false, message: (error as Error).message || 'Payment failed' });
+    } finally {
+      setProcessingPayment(false);
     }
   }
 
@@ -166,15 +195,58 @@ export function ConnectAndPay({
 
   return (
     <>
-      <WalletOptions
-        chainId={chainId}
-        tokenAddress={tokenAddress}
-        isDark={isDark}
-        accentColor={accentColor}
-      />
+      <div style={{ height: '12rem', overflowY: 'auto' }}>
+        { !response && !processingPayment &&
+          <WalletOptions
+            chainId={chainId}
+            tokenAddress={tokenAddress}
+            isDark={isDark}
+            accentColor={accentColor}
+          />
+        }
 
-      <button
-        disabled={!isConnected || (chain?.id !== chainId) || isCheckingToken}
+        { response && !response.success && !processingPayment &&
+          <div style={{
+            marginTop: '1rem',
+            padding: '1rem',
+            backgroundColor: isDark ? '#3f3f46' : '#fef2f2',
+            color: isDark ? '#fca5a5' : '#991b1b',
+            border: isDark ? '1px solid #52525b' : '1px solid #fecaca'
+          }}>
+            <h3 style={{ fontWeight: '600', marginBottom: '0.5rem' }}>Payment Error</h3>
+            <p>{response.message}</p>
+          </div>
+        }
+
+        { response && response.success && !processingPayment &&
+          <div style={{
+            marginTop: '1rem',
+            padding: '1rem',
+            backgroundColor: isDark ? '#064e3b' : '#ecfdf5',
+            color: isDark ? '#a7f3d0' : '#065f46',
+            border: isDark ? '1px solid #10b981' : '1px solid #a7f3d0'
+          }}>
+            <h3 style={{ fontWeight: '600', marginBottom: '0.5rem' }}>Payment Successful</h3>
+            <p>Your payment has been processed successfully. You can close this window.</p>
+          </div>
+        }
+
+        { processingPayment &&
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            minHeight: '8rem',
+            paddingBottom: '2rem'
+          }}>
+            <LoadingSpinner accentColor={accentColor} size={48} />
+          </div>
+        }
+      </div>
+
+      { !response && <button
+        disabled={!isConnected || (chain?.id !== chainId) || isCheckingToken || processingPayment}
         style={{
           width: '100%',
           marginTop: '1.25rem',
@@ -191,7 +263,71 @@ export function ConnectAndPay({
         onMouseLeave={() => setIsHoveringButton(false)}
         onClick={() => { handlePay() }}>
         {isCheckingToken ? 'Validating token...' : `Purchase for ${displayAmount} ${tokenSymbol || '...'}`}
-      </button>
+      </button> }
+
+      { response && !response.success && !processingPayment && <button
+        disabled={!isConnected || (chain?.id !== chainId) || isCheckingToken}
+        style={{
+          width: '100%',
+          marginTop: '1.25rem',
+          paddingLeft: '1rem',
+          paddingRight: '1rem',
+          paddingTop: '0.5rem',
+          paddingBottom: '0.5rem',
+          backgroundColor: isHoveringButton ? darkenColor(accentColor) : accentColor,
+          color: 'white',
+          opacity: (!isConnected || (chain?.id !== chainId) || isCheckingToken) ? 0.5 : 1,
+          cursor: isHoveringButton ? 'pointer' : 'default'
+        }}
+        onMouseEnter={() => setIsHoveringButton(true)}
+        onMouseLeave={() => setIsHoveringButton(false)}
+        onClick={() => { handlePay() }}>
+        Try Again
+      </button> }
     </>
   )
+}
+
+interface LoadingSpinnerProps {
+  accentColor: string;
+  size?: number;
+}
+
+function LoadingSpinner({ accentColor, size = 32 }: LoadingSpinnerProps) {
+  return (
+    <div role="status">
+      <style>{`
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        .spinner-svg {
+          animation: spin 1s linear infinite;
+        }
+      `}</style>
+      <svg
+        aria-hidden="true"
+        className="spinner-svg"
+        style={{ width: `${size}px`, height: `${size}px` }}
+        viewBox="0 0 100 101"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+          fill={`${accentColor}33`}
+        />
+        <path
+          d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+          fill={accentColor}
+        />
+      </svg>
+      <span style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
+        Loading...
+      </span>
+    </div>
+  );
 }

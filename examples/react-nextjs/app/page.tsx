@@ -20,7 +20,7 @@ export default function Home() {
             // UI customization
             buttonHeight={40}
             buttonWidth={160}
-            displayMode="light"
+            displayMode="dark"
             accentColor="#0169a4"
           />
 

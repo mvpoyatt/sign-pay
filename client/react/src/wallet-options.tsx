@@ -87,8 +87,6 @@ export function WalletOptions({
       display: 'flex',
       flexDirection: 'column',
       gap: '1rem',
-      height: '12rem',
-      overflowY: 'auto'
     }}>
       { connectors.map((connector) => {
         const isConnected = activeConnector?.uid === connector.uid

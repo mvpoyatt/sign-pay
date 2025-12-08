@@ -22,6 +22,9 @@ export type SignPayProps = {
 
   buttonHeight?: number
   buttonWidth?: number
+  buttonText?: string
+  buttonRadius?: string
+  buttonBackgroundColor?: string
   displayMode?: 'light' | 'dark' | 'system'
   accentColor?: string
 };
@@ -37,8 +40,11 @@ export function SignPay({
   onPaymentCreated,
   buttonHeight,
   buttonWidth,
-  displayMode = 'dark',
-  accentColor = '#9333ea',
+  buttonText = 'Pay with Crypto',
+  buttonRadius = '0.75rem',
+  buttonBackgroundColor,
+  displayMode = 'system',
+  accentColor = '#338aea',
 }: SignPayProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isDark, setIsDark] = useState(true);
@@ -65,7 +71,8 @@ export function SignPay({
     return `#${Math.floor(r * 0.85).toString(16).padStart(2, '0')}${Math.floor(g * 0.85).toString(16).padStart(2, '0')}${Math.floor(b * 0.85).toString(16).padStart(2, '0')}`;
   };
 
-  const hoverColor = darkenColor(accentColor);
+  const finalButtonColor = buttonBackgroundColor || accentColor;
+  const hoverColor = darkenColor(finalButtonColor);
 
   return (
     <WagmiProvider config={WagmiConfig}>
@@ -73,8 +80,8 @@ export function SignPay({
 
         <button
           style={{
-            borderRadius: '0.75rem',
-            backgroundColor: accentColor,
+            borderRadius: buttonRadius,
+            backgroundColor: finalButtonColor,
             padding: '0.5rem 1rem',
             color: 'white',
             marginBottom: '1rem',
@@ -85,9 +92,9 @@ export function SignPay({
             width: buttonWidth || 160,
           }}
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverColor}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = accentColor}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = finalButtonColor}
           onClick={() => {setIsOpen(true)}}>
-          Pay with Crypto
+          {buttonText}
         </button>
 
         <Dialog open={isOpen} as="div" style={{ position: 'relative', zIndex: 10 }} onClose={() => {setIsOpen(false)}}>
