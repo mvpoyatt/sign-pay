@@ -66,25 +66,36 @@ export default function CheckoutPage() {
 | `onPaymentCreated` | `function` | Yes* | Alternative to `paymentEndpoint` - callback receives signature data |
 | `buttonHeight` | `number` | No | Button height in pixels (default: 40) |
 | `buttonWidth` | `number` | No | Button width in pixels (default: 160) |
-| `displayMode` | `'light' \| 'dark' \| 'system'` | No | Theme mode (default: 'dark'). 'system' follows OS preference |
-| `accentColor` | `string` | No | Hex color for buttons and accents (default: '#9333ea') |
+| `buttonText` | `string` | No | Custom button text (default: 'Pay with Crypto') |
+| `buttonRadius` | `string` | No | Button border radius (default: '0.75rem') |
+| `buttonBackgroundColor` | `string` | No | Button background color, overrides `accentColor` for button only |
+| `displayMode` | `'light' \| 'dark' \| 'system'` | No | Theme mode (default: 'system'). 'system' follows OS preference |
+| `accentColor` | `string` | No | Hex color for accents like spinner and borders (default: '#338aea') |
 
 *Either `paymentEndpoint` or `onPaymentCreated` is required.
 
-## Theming
+## Theming & Customization
 
-The component supports light, dark, and system-based themes with customizable accent colors:
+The component supports light, dark, and system-based themes with customizable colors and button styling:
 
 ```tsx
 <SignPay
   // ... other props
-  displayMode="system"    // Auto-detects OS theme
-  accentColor="#10b981"   // Custom green accent
+  displayMode="system"           // Auto-detects OS theme
+  accentColor="#10b981"          // Custom accent color for spinner, borders
+  buttonText="Buy Now"           // Custom button text
+  buttonRadius="0.5rem"          // Custom button border radius
+  buttonBackgroundColor="#9333ea" // Custom button color (overrides accentColor)
 />
 ```
 
+### Theming Options
+
 - **displayMode**: Choose `'light'`, `'dark'`, or `'system'` (follows OS preference)
-- **accentColor**: Any hex color for buttons and borders. Text is always white for readability.
+- **accentColor**: Hex color for spinner, borders, and other accent elements (default: '#338aea')
+- **buttonBackgroundColor**: Hex color specifically for the button background. If not provided, uses `accentColor`
+- **buttonText**: Customize the button text to match your use case
+- **buttonRadius**: Adjust button roundness with any CSS border-radius value
 
 ## Backend Integration
 
