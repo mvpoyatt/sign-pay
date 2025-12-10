@@ -11,7 +11,6 @@ import { FiX } from "react-icons/fi";
 export type SignPayProps = {
   chainId: SupportedChainId
   tokenAddress: `0x${string}`
-  tokenAmount: string
   recipientAddress: `0x${string}`
   paymentEndpoint?: string
   orderHeaders?: Record<string, string>
@@ -32,7 +31,6 @@ export type SignPayProps = {
 export function SignPay({
   chainId,
   tokenAddress,
-  tokenAmount,
   recipientAddress,
   paymentEndpoint,
   orderHeaders,
@@ -130,7 +128,6 @@ export function SignPay({
                 <ConnectAndPay
                   chainId={chainId}
                   tokenAddress={tokenAddress}
-                  tokenAmount={tokenAmount}
                   recipientAddress={recipientAddress}
                   paymentEndpoint={paymentEndpoint}
                   orderHeaders={orderHeaders}

@@ -9,6 +9,8 @@ dist/
 
 # Go
 go.sum
+# Compiled binaries
+examples/go-gin/example-go-gin
 
 # Environment
 .env

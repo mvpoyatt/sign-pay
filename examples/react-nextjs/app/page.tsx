@@ -12,16 +12,31 @@ export default function Home() {
             // Chain configs
             chainId={84532}
             tokenAddress={'0x036CbD53842c5426634e7929541eC2318f3dCF7e'}
-            tokenAmount={'19990000'}
             recipientAddress={'0xB8E124eaA317761CF8E4C63EB445fA3d21deD759'}
             // API configs
             paymentEndpoint={'http://localhost:8080/api/purchase'}
-            orderData={{ orderId: 'order_12345', description: 'Test Order' }}
+            orderData={{
+              customerEmail: "customer@example.com",
+              items: [
+                {
+                  productCode: "TSH-001",
+                  productName: "T-Shirt",
+                  quantity: 2,
+                  size: "L"
+                },
+                {
+                  productCode: "JEANS-042",
+                  productName: "Jeans",
+                  quantity: 1,
+                  size: "32"
+                }
+              ]
+            }}
             // UI customization
             buttonHeight={40}
             buttonWidth={160}
-            displayMode="dark"
-            accentColor="#0169a4"
+            displayMode="system"
+            accentColor="#016900"
           />
 
         </div>

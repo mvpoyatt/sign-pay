@@ -11,7 +11,6 @@ import { useIsERC3009Token } from './detect-standard';
 export type ConnectAndPayProps = {
   chainId: SupportedChainId
   tokenAddress: `0x${string}`
-  tokenAmount: string  // Amount in smallest unit (e.g., "19990000" for 19.99 USDC with 6 decimals)
   recipientAddress: `0x${string}`
   paymentEndpoint?: string
   orderHeaders?: Record<string, string>
@@ -26,7 +25,6 @@ export type ConnectAndPayProps = {
 export function ConnectAndPay({
   chainId,
   tokenAddress,
-  tokenAmount,
   recipientAddress,
   paymentEndpoint,
   orderHeaders,
@@ -38,6 +36,8 @@ export function ConnectAndPay({
   const [response, setResponse] = useState<{success: boolean, message: string} | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [isHoveringButton, setIsHoveringButton] = useState(false);
+  const [discoveredAmount, setDiscoveredAmount] = useState<string | null>(null);
+  const [isDiscoveringPrice, setIsDiscoveringPrice] = useState(false);
   const { isConnected, chain, address } = useConnection()
   const switchChain = useSwitchChain()
   const { data: walletClient } = useWalletClient({ chainId })
@@ -47,6 +47,37 @@ export function ConnectAndPay({
       switchChain.mutate({ chainId })
     }
   }, [isConnected, chain?.id, chainId, switchChain])
+
+  // Price discovery on component load
+  useEffect(() => {
+    const discoverPrice = async () => {
+      if (!paymentEndpoint || !orderData) return;
+
+      setIsDiscoveringPrice(true);
+      try {
+        const discoveryResponse = await fetch(paymentEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(orderHeaders || {})
+          },
+          body: JSON.stringify(orderData)
+        });
+
+        if (discoveryResponse.status === 402) {
+          const paymentReq = await discoveryResponse.json();
+          const amount = paymentReq.accepts[0].maxAmountRequired;
+          setDiscoveredAmount(amount);
+        }
+      } catch (error) {
+        console.error('Price discovery failed:', error);
+      } finally {
+        setIsDiscoveringPrice(false);
+      }
+    };
+
+    discoverPrice();
+  }, [paymentEndpoint, orderData, orderHeaders])
 
   // Validate token supports ERC-3009
   const { isSupported: isERC3009, isLoading: isCheckingToken } = useIsERC3009Token(
@@ -94,12 +125,12 @@ export function ConnectAndPay({
   })
 
   // Convert smallest unit to human-readable for display
-  const displayAmount = tokenDecimals
-    ? (Number(tokenAmount) / Math.pow(10, tokenDecimals)).toFixed(Math.min(tokenDecimals, 6))
-    : tokenAmount;
+  const displayAmount = discoveredAmount && tokenDecimals
+    ? (Number(discoveredAmount) / Math.pow(10, tokenDecimals)).toFixed(Math.min(tokenDecimals, 6))
+    : discoveredAmount || '...';
 
   const handlePay = async () => {
-    if (!isConnected || !address || !walletClient || !tokenName) {
+    if (!isConnected || !address || !walletClient || !tokenName || !discoveredAmount) {
       console.error('Missing required data for payment');
       return;
     }
@@ -112,18 +143,19 @@ export function ConnectAndPay({
     setProcessingPayment(true);
 
     try {
+      // Create signature with discovered amount
       const signatureData = await CreateSignature(
         walletClient,
         address,
         recipientAddress,
         tokenAddress,
-        tokenAmount,
+        discoveredAmount,
         chainId,
         tokenName as string,
-        (tokenVersion as string) || '2' // Use token's version or default to '2' for USDC/EURC
+        (tokenVersion as string) || '2'
       );
 
-      // Handle payment with custom callback or endpoint
+      // Send payment with X-PAYMENT header
       if (onPaymentCreated) {
         await onPaymentCreated(signatureData);
       } else if (paymentEndpoint) {
@@ -131,7 +163,7 @@ export function ConnectAndPay({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Payment': signatureData,
+            'X-PAYMENT': signatureData,
             ...(orderHeaders || {})
           },
           body: orderData ? JSON.stringify(orderData) : undefined
@@ -246,7 +278,7 @@ export function ConnectAndPay({
       </div>
 
       { !response && <button
-        disabled={!isConnected || (chain?.id !== chainId) || isCheckingToken || processingPayment}
+        disabled={!isConnected || (chain?.id !== chainId) || isCheckingToken || processingPayment || isDiscoveringPrice || !discoveredAmount}
         style={{
           width: '100%',
           marginTop: '1.25rem',
@@ -256,13 +288,13 @@ export function ConnectAndPay({
           paddingBottom: '0.5rem',
           backgroundColor: isHoveringButton ? darkenColor(accentColor) : accentColor,
           color: 'white',
-          opacity: (!isConnected || (chain?.id !== chainId) || isCheckingToken) ? 0.5 : 1,
+          opacity: (!isConnected || (chain?.id !== chainId) || isCheckingToken || isDiscoveringPrice || !discoveredAmount) ? 0.5 : 1,
           cursor: isHoveringButton ? 'pointer' : 'default'
         }}
         onMouseEnter={() => setIsHoveringButton(true)}
         onMouseLeave={() => setIsHoveringButton(false)}
         onClick={() => { handlePay() }}>
-        {isCheckingToken ? 'Validating token...' : `Purchase for ${displayAmount} ${tokenSymbol || '...'}`}
+        {isCheckingToken ? 'Validating token...' : isDiscoveringPrice ? 'Loading price...' : `Purchase for ${displayAmount} ${tokenSymbol || '...'}`}
       </button> }
 
       { response && !response.success && !processingPayment && <button

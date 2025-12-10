@@ -19,14 +19,23 @@ export default function CheckoutPage() {
       // Network & token config
       chainId={84532}
       tokenAddress="0x036CbD53842c5426634e7929541eC2318f3dCF7e"
-      tokenAmount="1000000"  // 1 USDC (6 decimals)
       recipientAddress="0xYourAddress"
 
       // Backend endpoint
       paymentEndpoint="/api/purchase"
 
       // Order data (sent in request body)
-      orderData={{ orderId: '12345', items: [...] }}
+      orderData={{
+        customerEmail: "customer@example.com",
+        items: [
+          {
+            productCode: "TSH-001",
+            productName: "T-Shirt",
+            quantity: 2,
+            size: "L"
+          }
+        ]
+      }}
 
       // Optional: custom headers (e.g., auth token)
       orderHeaders={{ 'Authorization': 'Bearer token' }}
@@ -44,11 +53,13 @@ export default function CheckoutPage() {
 ## What It Does
 
 1. Renders a "Pay with Crypto" button
-2. Checks if the token supports ERC-3009 (signature-based transfers)
-3. Prompts the user to connect their wallet to the appropriate chain if not already connected
-4. Asks user to sign an authorization message (EIP-712)
-5. POSTs to your `paymentEndpoint` with:
-   - Payment signature in `X-Payment` header
+2. Automatically discovers the price from your backend (x402 protocol)
+3. Displays the price on the button
+4. Checks if the token supports ERC-3009 (signature-based transfers)
+5. Prompts the user to connect their wallet to the appropriate chain if not already connected
+6. When user clicks "Pay", asks them to sign an authorization message (EIP-712)
+7. POSTs to your `paymentEndpoint` with:
+   - Payment signature in `X-PAYMENT` header
    - Your `orderData` in request body
    - Any custom `orderHeaders`
 
@@ -58,7 +69,6 @@ export default function CheckoutPage() {
 |------|------|----------|-------------|
 | `chainId` | `number` | Yes | Network chain ID (e.g., 1 for Ethereum, 8453 for Base) |
 | `tokenAddress` | `0x${string}` | Yes | ERC-3009 token address (e.g., USDC) |
-| `tokenAmount` | `string` | Yes | Amount in token's smallest unit (e.g., "1000000" for 1 USDC) |
 | `recipientAddress` | `0x${string}` | Yes | Where the funds should go |
 | `paymentEndpoint` | `string` | Yes* | Your backend endpoint to receive the payment |
 | `orderData` | `object` | No | Custom data sent in request body |
@@ -99,37 +109,12 @@ The component supports light, dark, and system-based themes with customizable co
 
 ## Backend Integration
 
-The component sends a POST request to your endpoint with:
+The component uses x402 protocol for automatic price discovery:
 
-**Headers:**
-```
-X-Payment: base64EncodedPaymentPayload
-Content-Type: application/json
-```
+1. **Price Discovery** (automatic on load): Sends order data without payment to get the amount
+2. **Payment** (when user clicks Pay): Sends signed payment authorization
 
-**Body:**
-```json
-{
-  "orderId": "12345",
-  "items": [...]
-  // ... your orderData
-}
-```
-
-Use the Go middleware to automatically verify and settle the payment:
-
-```go
-import signpay "github.com/mvpoyatt/sign-pay/server/go"
-
-r.POST("/api/purchase",
-  signpay.SignPayMiddleware(chainId, tokenAddress, amount, recipient, facilitatorURL),
-  func(c *gin.Context) {
-    // Payment verified - process the order
-  },
-)
-```
-
-See the [Go middleware README](https://github.com/mvpoyatt/sign-pay/tree/main/server/go) for details.
+The Go middleware handles both requests automatically. See the [Go middleware README](https://github.com/mvpoyatt/sign-pay/tree/main/server/go) for implementation details.
 
 ## Supported Tokens
 

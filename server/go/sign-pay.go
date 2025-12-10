@@ -1,5 +1,10 @@
 package signpay
 
+// Portions of this code are derived from Coinbase x402
+// Copyright 2024 Coinbase, Inc.
+// Licensed under Apache License 2.0
+// Original source: https://github.com/coinbase/x402/blob/main/go/pkg/gin/middleware.go
+
 import (
 	"bytes"
 	"encoding/json"
@@ -14,40 +19,6 @@ import (
 
 const x402Version = 1
 const PaymentDataKey = "signPaymentData"
-
-// debugFacilitatorError makes a direct HTTP call to get detailed error info
-func debugFacilitatorError(facilitatorURL string, payload *types.PaymentPayload, requirements *types.PaymentRequirements, apiKey string) {
-	type verifyRequest struct {
-		PaymentPayload      *types.PaymentPayload      `json:"paymentPayload"`
-		PaymentRequirements *types.PaymentRequirements `json:"paymentRequirements"`
-	}
-
-	reqBody := verifyRequest{
-		PaymentPayload:      payload,
-		PaymentRequirements: requirements,
-	}
-
-	reqJSON, _ := json.Marshal(reqBody)
-
-	req, err := http.NewRequest("POST", facilitatorURL+"/verify", bytes.NewBuffer(reqJSON))
-	if err != nil {
-		return
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	if apiKey != "" {
-		req.Header.Set("Authorization", "Bearer "+apiKey)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	fmt.Printf("[SignPay] Facilitator response: status=%d, body=%s\n", resp.StatusCode, string(bodyBytes))
-}
 
 // Chain ID to network name mapping for supported chains
 var chainIDToNetwork = map[int]string{
@@ -78,6 +49,14 @@ type PaymentData struct {
 	RequestBody         json.RawMessage // Raw JSON from request body
 }
 
+// UnmarshalOrderData unmarshals the request body into the provided struct
+func (p *PaymentData) UnmarshalOrderData(v interface{}) error {
+	if len(p.RequestBody) == 0 {
+		return nil
+	}
+	return json.Unmarshal(p.RequestBody, v)
+}
+
 // Options contains configuration for the payment middleware
 type Options struct {
 	APIKey string
@@ -91,6 +70,12 @@ func WithAPIKey(apiKey string) Option {
 	return func(o *Options) {
 		o.APIKey = apiKey
 	}
+}
+
+// GetPaymentData retrieves verified payment data from the Gin context
+func GetPaymentData(c *gin.Context) *PaymentData {
+	data, _ := c.Get(PaymentDataKey)
+	return data.(*PaymentData)
 }
 
 // SignPayMiddleware creates Gin middleware that handles signature-based payment verification and settlement.
@@ -166,10 +151,25 @@ func SignPayMiddleware(chainId int, tokenAddress string, tokenAmount string, rec
 		}
 		resourceURL := fmt.Sprintf("%s://%s%s", scheme, c.Request.Host, c.Request.URL.Path)
 
+		// Determine payment amount (context overrides configured amount)
+		amount := tokenAmount
+		if dynamicAmount, exists := c.Get("signpay:amount"); exists {
+			amount = dynamicAmount.(string)
+		}
+
+		// Validate amount is configured
+		if amount == "" {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error":       "Payment amount not configured. Set amount parameter or use c.Set(\"signpay:amount\", amount) in preceding middleware.",
+				"x402Version": x402Version,
+			})
+			return
+		}
+
 		paymentRequirements := &types.PaymentRequirements{
 			Scheme:            "exact",
 			Network:           network,
-			MaxAmountRequired: tokenAmount,
+			MaxAmountRequired: amount,
 			Resource:          resourceURL,
 			Description:       "Payment for purchase",
 			PayTo:             recipientAddress,
@@ -178,10 +178,12 @@ func SignPayMiddleware(chainId int, tokenAddress string, tokenAmount string, rec
 			Extra:             nil,
 		}
 
-		payment := c.GetHeader("X-Payment")
+		payment := c.GetHeader("X-PAYMENT")
 		if payment == "" {
 			c.AbortWithStatusJSON(http.StatusPaymentRequired, gin.H{
-				"error": "X-Payment header is required",
+				"error":       "X-PAYMENT header is required",
+				"accepts":     []*types.PaymentRequirements{paymentRequirements},
+				"x402Version": x402Version,
 			})
 			return
 		}
@@ -189,7 +191,8 @@ func SignPayMiddleware(chainId int, tokenAddress string, tokenAmount string, rec
 		paymentPayload, err := types.DecodePaymentPayloadFromBase64(payment)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"error": "Invalid payment payload: " + err.Error(),
+				"error":       "Invalid payment payload: " + err.Error(),
+				"x402Version": x402Version,
 			})
 			return
 		}
@@ -198,11 +201,9 @@ func SignPayMiddleware(chainId int, tokenAddress string, tokenAmount string, rec
 		// Verify payment
 		verifyResponse, err := facilitatorClient.Verify(paymentPayload, paymentRequirements)
 		if err != nil {
-			// Try to get more details by making a direct HTTP call
-			debugFacilitatorError(facilitatorURL, paymentPayload, paymentRequirements, options.APIKey)
-
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"error": "Payment verification failed: " + err.Error(),
+				"error":       "Payment verification failed: " + err.Error(),
+				"x402Version": x402Version,
 			})
 			return
 		}
@@ -213,7 +214,9 @@ func SignPayMiddleware(chainId int, tokenAddress string, tokenAmount string, rec
 				reason = *verifyResponse.InvalidReason
 			}
 			c.AbortWithStatusJSON(http.StatusPaymentRequired, gin.H{
-				"error": "Payment verification failed: " + reason,
+				"error":       "Payment verification failed: " + reason,
+				"accepts":     []*types.PaymentRequirements{paymentRequirements},
+				"x402Version": x402Version,
 			})
 			return
 		}
@@ -222,7 +225,8 @@ func SignPayMiddleware(chainId int, tokenAddress string, tokenAmount string, rec
 		settleResponse, err := facilitatorClient.Settle(paymentPayload, paymentRequirements)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"error": "Payment settlement failed: " + err.Error(),
+				"error":       "Payment settlement failed: " + err.Error(),
+				"x402Version": x402Version,
 			})
 			return
 		}
@@ -233,9 +237,17 @@ func SignPayMiddleware(chainId int, tokenAddress string, tokenAmount string, rec
 				errorReason = *settleResponse.ErrorReason
 			}
 			c.AbortWithStatusJSON(http.StatusPaymentRequired, gin.H{
-				"error": "Payment settlement failed: " + errorReason,
+				"error":       "Payment settlement failed: " + errorReason,
+				"accepts":     []*types.PaymentRequirements{paymentRequirements},
+				"x402Version": x402Version,
 			})
 			return
+		}
+
+		// Add X-PAYMENT-RESPONSE header
+		settleResponseHeader, err := settleResponse.EncodeToBase64String()
+		if err == nil {
+			c.Header("X-PAYMENT-RESPONSE", settleResponseHeader)
 		}
 
 		// Store payment data in context for handler access
