@@ -1,6 +1,6 @@
 {
   "name": "@sign-pay/react",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "React component for signature-based crypto payments",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -20,6 +20,13 @@
     "react",
     "web3"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mvpoyatt/sign-pay.git",
+    "directory": "client/react"
+  },
+  "license": "MIT",
+  "author": "Michael Poyatt",
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
