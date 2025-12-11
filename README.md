@@ -1,16 +1,16 @@
 # Sign-Pay
 
-x402-compatible payment infrastructure for signature-based crypto payments. Accept crypto payments via middleware in any application - from e-commerce checkouts to AI agent APIs.
+Signature-based crypto payment infrastructure. Accept crypto payments via middleware in e-commerce checkouts, AI agent APIs, and more.
 
 ## Overview
 
-Sign-Pay implements the [x402 payment protocol](https://x402.org) with extensions for dynamic pricing and flexible workflows. Users sign EIP-712 payment authorizations, your backend verifies and settles them via facilitators, then serves the requested resource or processes the order.
+Sign-Pay extends the [x402 payment protocol](https://x402.org) with support for dynamic pricing and flexible workflows. Users sign EIP-712 payment authorizations in their wallet, your backend verifies and settles them via facilitators, then serves the requested resource or processes the order.
 
-**Core capabilities:**
-- **x402 Protocol Support**: Standard X-PAYMENT/X-PAYMENT-RESPONSE headers and resource flow
+**Key features:**
 - **Dynamic Pricing**: Calculate prices from order data before payment (see React component example below)
-- **ERC-3009 Token Support**: Gasless transfers for any ERC-3009 compatible token (USDC, EURC, etc.)
-- **Multiple Use Cases**: E-commerce checkout, API payments, metered access, AI agent integrations
+- **Gasless Transfers**: Support for any ERC-3009 compatible token (USDC, EURC, etc.) - users don't pay gas
+- **Flexible Workflows**: E-commerce checkout, API payments, metered access, AI agent integrations
+- **x402 Compatible**: Standard X-PAYMENT/X-PAYMENT-RESPONSE headers and facilitator infrastructure
 
 ## Architecture
 

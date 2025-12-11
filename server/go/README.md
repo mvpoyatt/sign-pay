@@ -44,7 +44,11 @@ Fixed-price content or API access. Agent-friendly.
 ```go
 r.GET("/api/joke",
   signpay.SignPayMiddleware(
-    chainId, tokenAddr, "5000000", recipient, facilitatorURL,
+    chainId,          // Chain ID
+    tokenAddr,        // Token address
+    "5000000",        // Amount (0.05 USDC = 6 decimals)
+    recipient,        // Recipient
+    facilitatorURL,   // Facilitator URL
   ),
   func(c *gin.Context) {
     c.JSON(200, gin.H{"joke": "Why do programmers prefer dark mode?"})
@@ -59,9 +63,13 @@ Calculate prices from order data, validate before charging.
 ```go
 r.POST("/api/purchase",
   validateOrder,        // 1. Validate order data (BEFORE payment)
-  calculateOrderTotal,  // 2. Calculate dynamic amount
+  calculateOrderTotal,  // 2. Calculate dynamic amount (sets context)
   signpay.SignPayMiddleware(
-    chainId, tokenAddr, "", recipient, facilitatorURL,
+    chainId,            // Chain ID
+    tokenAddr,          // Token address
+    "",                 // Amount (empty = use dynamic from context)
+    recipient,          // Recipient
+    facilitatorURL,     // Facilitator URL
   ),
   fulfillOrder,         // 3. Process order (AFTER payment settled)
 )
@@ -206,7 +214,7 @@ func calculateOrderTotal(c *gin.Context) {
 }
 ```
 
-**Note**: When the amount parameter is an empty string `""`, SignPayMiddleware reads from `signpay:amount` in the context.
+**Note**: If `signpay:amount` is set in the context, it overrides the amount parameter. Pass empty string `""` as the amount parameter when using dynamic pricing middleware.
 
 ### Example: Order Processing Handler
 
