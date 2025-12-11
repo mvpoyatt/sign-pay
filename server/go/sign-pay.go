@@ -59,7 +59,8 @@ func (p *PaymentData) UnmarshalOrderData(v interface{}) error {
 
 // Options contains configuration for the payment middleware
 type Options struct {
-	APIKey string
+	APIKey   string
+	Resource string
 }
 
 // Option is a functional option for configuring the middleware
@@ -69,6 +70,14 @@ type Option func(*Options)
 func WithAPIKey(apiKey string) Option {
 	return func(o *Options) {
 		o.APIKey = apiKey
+	}
+}
+
+// WithResource sets a custom resource URL for the payment requirements.
+// If not provided, the resource URL is automatically constructed from the request.
+func WithResource(resource string) Option {
+	return func(o *Options) {
+		o.Resource = resource
 	}
 }
 
@@ -144,12 +153,18 @@ func SignPayMiddleware(chainId int, tokenAddress string, tokenAmount string, rec
 		}
 
 		// Create payment requirements for verification
-		// Build resource URL from request
-		scheme := "http"
-		if c.Request.TLS != nil {
-			scheme = "https"
+		// Determine resource URL (use provided or auto-construct)
+		var resourceURL string
+		if options.Resource != "" {
+			resourceURL = options.Resource
+		} else {
+			// Auto-construct resource URL from request
+			scheme := "http"
+			if c.Request.TLS != nil {
+				scheme = "https"
+			}
+			resourceURL = fmt.Sprintf("%s://%s%s", scheme, c.Request.Host, c.Request.URL.Path)
 		}
-		resourceURL := fmt.Sprintf("%s://%s%s", scheme, c.Request.Host, c.Request.URL.Path)
 
 		// Determine payment amount (context overrides configured amount)
 		amount := tokenAmount

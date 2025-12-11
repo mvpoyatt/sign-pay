@@ -1,6 +1,6 @@
 # @sign-pay/react
 
-React component for signature-based crypto payments.
+React checkout component for signature-based crypto payments. Provides a complete e-commerce payment flow with automatic price discovery, wallet connection, and payment signing.
 
 ## Installation
 
@@ -8,7 +8,7 @@ React component for signature-based crypto payments.
 npm install @sign-pay/react
 ```
 
-## Usage
+## Basic Usage
 
 ```tsx
 import { SignPay } from '@sign-pay/react';
@@ -37,12 +37,7 @@ export default function CheckoutPage() {
         ]
       }}
 
-      // Optional: custom headers (e.g., auth token)
-      orderHeaders={{ 'Authorization': 'Bearer token' }}
-
       // Optional: UI customization
-      buttonHeight={40}
-      buttonWidth={160}
       displayMode="system"
       accentColor="#10b981"
     />
@@ -50,18 +45,14 @@ export default function CheckoutPage() {
 }
 ```
 
-## What It Does
+## How It Works
 
-1. Renders a "Pay with Crypto" button
-2. Automatically discovers the price from your backend (x402 protocol)
-3. Displays the price on the button
-4. Checks if the token supports ERC-3009 (signature-based transfers)
-5. Prompts the user to connect their wallet to the appropriate chain if not already connected
-6. When user clicks "Pay", asks them to sign an authorization message (EIP-712)
-7. POSTs to your `paymentEndpoint` with:
-   - Payment signature in `X-PAYMENT` header
-   - Your `orderData` in request body
-   - Any custom `orderHeaders`
+1. **Price Discovery** (automatic on load): Component sends order data to backend, receives price from 402 response
+2. **User Interaction**: User clicks "Pay with Crypto", connects wallet if needed, signs EIP-712 authorization
+3. **Payment**: Component sends signed authorization via `X-PAYMENT` header with order data in body
+4. **Backend Processing**: Go middleware settles payment and processes order
+
+See the [Go middleware README](https://github.com/mvpoyatt/sign-pay/tree/main/server/go) for backend implementation.
 
 ## Props
 
@@ -84,9 +75,7 @@ export default function CheckoutPage() {
 
 *Either `paymentEndpoint` or `onPaymentCreated` is required.
 
-## Theming & Customization
-
-The component supports light, dark, and system-based themes with customizable colors and button styling:
+## Theming
 
 ```tsx
 <SignPay
@@ -99,31 +88,31 @@ The component supports light, dark, and system-based themes with customizable co
 />
 ```
 
-### Theming Options
+### Theme Options
 
-- **displayMode**: Choose `'light'`, `'dark'`, or `'system'` (follows OS preference)
-- **accentColor**: Hex color for spinner, borders, and other accent elements (default: '#338aea')
-- **buttonBackgroundColor**: Hex color specifically for the button background. If not provided, uses `accentColor`
-- **buttonText**: Customize the button text to match your use case
+- **displayMode**: `'light'`, `'dark'`, or `'system'` (follows OS preference)
+- **accentColor**: Hex color for spinner, borders, and other accent elements
+- **buttonBackgroundColor**: Hex color specifically for the button (if not provided, uses `accentColor`)
+- **buttonText**: Customize button text to match your use case
 - **buttonRadius**: Adjust button roundness with any CSS border-radius value
 
 ## Backend Integration
 
 The component uses x402 protocol for automatic price discovery:
 
-1. **Price Discovery** (automatic on load): Sends order data without payment to get the amount
+1. **Price Discovery** (on load): Sends order data without payment to get the amount
 2. **Payment** (when user clicks Pay): Sends signed payment authorization
 
-The Go middleware handles both requests automatically. See the [Go middleware README](https://github.com/mvpoyatt/sign-pay/tree/main/server/go) for implementation details.
+Your Go middleware handles both requests automatically. See [backend implementation guide](https://github.com/mvpoyatt/sign-pay/tree/main/server/go).
 
 ## Supported Tokens
 
-Any token implementing ERC-3009 (transferWithAuthorization), including:
+Any ERC-3009 token (tokens with `transferWithAuthorization`):
 - USDC (all supported networks)
 - EURC
 - Other ERC-3009 compliant tokens
 
-The component automatically checks if a token supports ERC-3009 before allowing payment.
+The component automatically validates token compatibility before allowing payment.
 
 ## Supported Networks
 
@@ -134,9 +123,9 @@ The component automatically checks if a token supports ERC-3009 before allowing 
 - Polygon Mainnet (137) & Amoy (80002)
 - Avalanche C-Chain (43114) & Fuji (43113)
 
-## Example
+## Complete Example
 
-See the [Next.js example](../../../examples/react-nextjs/) for a complete working implementation.
+See the [Next.js example](../../../examples/react-nextjs/) for a full e-commerce implementation with dynamic pricing and order processing.
 
 ## License
 
